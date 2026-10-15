@@ -8,6 +8,6 @@
 build/
 **/build/
 
-# Systemowe
+# System
 .DS_Store
 Thumbs.db
