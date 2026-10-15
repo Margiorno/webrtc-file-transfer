@@ -36,7 +36,7 @@ class Room(
 
     fun resolveJoin(secret: ClientSecret, decision: JoinDecision) {
         require(secret == hostSecret) { "Only host can resolve join request" }
-        check(state == RoomState.WAITING_FOR_GUEST) {"Cannot resolve room in state $state"}
+        check(state == RoomState.PENDING_HOST_APPROVAL) {"Cannot resolve room in state $state"}
 
         if (decision!= JoinDecision.ACCEPT){
             this.state = RoomState.CLOSED

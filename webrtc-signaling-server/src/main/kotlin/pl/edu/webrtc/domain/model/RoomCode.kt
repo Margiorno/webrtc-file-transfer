@@ -10,7 +10,7 @@ value class RoomCode(val value: String) {
 
     companion object {
         const val CODE_LENGTH = 6
-        private val REGEX = Regex("^\\d{$CODE_LENGTH}}")
+        private val REGEX = Regex("^\\d{$CODE_LENGTH}$")
         private val random = SecureRandom()
 
         fun generate(length: Int = CODE_LENGTH): RoomCode {
