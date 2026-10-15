@@ -21,6 +21,7 @@ dependencies {
     implementation("io.quarkus:quarkus-rest")
     testImplementation("io.quarkus:quarkus-junit")
     testImplementation("io.rest-assured:rest-assured")
+    testImplementation("io.mockk:mockk:1.13.13")
 }
 
 group = "pl.edu.webrtc"

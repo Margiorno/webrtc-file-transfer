@@ -89,6 +89,19 @@ class RoomSignalingService (
         return room
     }
 
+    fun resolveSignalingRecipient(
+        code: RoomCode,
+        senderId: ClientId,
+        secret: ClientSecret
+    ): ClientId {
+        val room = getRoomOrThrow(code)
+        require(room.canRouteSignaling(senderId, secret)) {
+            "Unauthorized signaling attempt in room ${code.value}"
+        }
+        return room.getRecipientId(senderId)
+            ?: error("Recipient not found in room ${code.value}")
+    }
+
     private fun getRoomOrThrow(code: RoomCode): Room {
         return roomRepository.findByCode(code)
             ?: throw NoSuchElementException("Room with code $code was not found")
