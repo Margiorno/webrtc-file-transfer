@@ -53,7 +53,7 @@ class InMemoryRoomRepositoryTest {
         updatedRoom.requestJoin(
             guestId = ClientId.generate(),
             guestSecret = ClientSecret.generate(),
-            metadata = DeviceMetadata("PC", "Linux", "Firefox")
+            metadata = DeviceMetadata(DeviceType.DESKTOP_PC, OperatingSystem.WINDOWS, Browser.FIREFOX)
         )
         repository.save(updatedRoom)
 

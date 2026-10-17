@@ -1,14 +1,35 @@
 package pl.edu.webrtc.domain.model
 
-data class DeviceMetadata(
-    val deviceName: String,
-    val operatingSystem: String,
-    val browser: String
-) {
-    init {
-        require(deviceName.isNotBlank()) {"deviceName must not be blank"}
-        require(operatingSystem.isNotBlank()) { "operatingSystem must not be blank" }
-        require(browser.isNotBlank()) {"browser must not be blank"}
-    }
-
+enum class DeviceType {
+    DESKTOP_PC,
+    MAC,
+    IPHONE,
+    IPAD,
+    ANDROID_PHONE,
+    ANDROID_TABLET,
+    UNKNOWN
 }
+
+enum class OperatingSystem {
+    WINDOWS,
+    MACOS,
+    LINUX,
+    ANDROID,
+    IOS,
+    UNKNOWN
+}
+
+enum class Browser {
+    CHROME,
+    FIREFOX,
+    SAFARI,
+    EDGE,
+    OPERA,
+    UNKNOWN
+}
+
+data class DeviceMetadata(
+    val deviceType: DeviceType,
+    val operatingSystem: OperatingSystem,
+    val browser: Browser
+)

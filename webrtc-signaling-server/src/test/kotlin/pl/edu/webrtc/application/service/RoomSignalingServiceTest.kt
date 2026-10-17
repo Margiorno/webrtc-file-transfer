@@ -26,7 +26,7 @@ class RoomSignalingServiceTest {
     private val hostSecret = ClientSecret.generate()
     private val guestId = ClientId.generate()
     private val guestSecret = ClientSecret.generate()
-    private val metadata = DeviceMetadata("Desktop-PC", "Windows 11", "Firefox 130")
+    private val metadata = DeviceMetadata(DeviceType.DESKTOP_PC, OperatingSystem.WINDOWS, Browser.FIREFOX)
 
     private fun MockKMatcherScope.anyRoomCode(): RoomCode {
         val boxMethod = RoomCode::class.java.getDeclaredMethod("box-impl", String::class.java).apply {

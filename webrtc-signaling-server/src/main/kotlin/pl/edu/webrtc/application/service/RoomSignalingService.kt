@@ -80,7 +80,7 @@ class RoomSignalingService (
         val room = getRoomOrThrow(code)
         room.submit2FA(guestId, guestSecret, twoFactorCode)
 
-        if (room.state.equals(RoomState.CLOSED)){
+        if (room.state == RoomState.CLOSED){
             roomRepository.deleteByCode(code)
         } else {
             roomRepository.save(room)
@@ -104,6 +104,6 @@ class RoomSignalingService (
 
     private fun getRoomOrThrow(code: RoomCode): Room {
         return roomRepository.findByCode(code)
-            ?: throw NoSuchElementException("Room with code $code was not found")
+            ?: throw NoSuchElementException("Room with code ${code.value} was not found")
     }
 }

@@ -12,7 +12,7 @@ class RoomTest {
     private val hostSecret = ClientSecret.generate()
     private val guestId = ClientId.generate()
     private val guestSecret = ClientSecret.generate()
-    private val metadata = DeviceMetadata("MacBook Pro", "macOS", "Safari")
+    private val metadata = DeviceMetadata(DeviceType.DESKTOP_PC, OperatingSystem.WINDOWS, Browser.FIREFOX)
 
     private fun createRoom(mode: SecurityMode = SecurityMode.TWO_FACTOR): Room {
         return Room(roomCode, hostId, hostSecret, mode)

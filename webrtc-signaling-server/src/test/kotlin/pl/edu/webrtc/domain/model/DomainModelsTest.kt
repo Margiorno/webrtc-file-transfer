@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import pl.edu.webrtc.infrastructure.web.UserAgentParser
 import java.util.UUID
 
 class DomainModelsTest {
@@ -119,21 +120,20 @@ class DomainModelsTest {
     @Nested
     inner class DeviceMetadataTests {
         @Test
-        fun `should create valid DeviceMetadata`() {
-            val metadata = DeviceMetadata("Desktop-PC", "Windows 11", "Firefox 130")
-            assertEquals("Desktop-PC", metadata.deviceName)
-            assertEquals("Windows 11", metadata.operatingSystem)
-            assertEquals("Firefox 130", metadata.browser)
+        fun `should create valid DeviceMetadata with enums`() {
+            val metadata = DeviceMetadata(DeviceType.DESKTOP_PC, OperatingSystem.WINDOWS, Browser.FIREFOX)
+            assertEquals(DeviceType.DESKTOP_PC, metadata.deviceType)
+            assertEquals(OperatingSystem.WINDOWS, metadata.operatingSystem)
+            assertEquals(Browser.FIREFOX, metadata.browser)
         }
 
         @Test
-        fun `should throw exception when any field is blank`() {
-            assertThrows<IllegalArgumentException> { DeviceMetadata("", "Windows", "Chrome") }
-            assertThrows<IllegalArgumentException> { DeviceMetadata("   ", "Windows", "Chrome") }
-            assertThrows<IllegalArgumentException> { DeviceMetadata("PC", "", "Chrome") }
-            assertThrows<IllegalArgumentException> { DeviceMetadata("PC", "   ", "Chrome") }
-            assertThrows<IllegalArgumentException> { DeviceMetadata("PC", "Windows", "") }
-            assertThrows<IllegalArgumentException> { DeviceMetadata("PC", "Windows", "   ") }
+        fun `UserAgentParser should return UNKNOWN fields for blank or invalid user agent`() {
+            val metadata = UserAgentParser.parse("")
+
+            assertEquals(DeviceType.UNKNOWN, metadata.deviceType)
+            assertEquals(OperatingSystem.UNKNOWN, metadata.operatingSystem)
+            assertEquals(Browser.UNKNOWN, metadata.browser)
         }
     }
 
