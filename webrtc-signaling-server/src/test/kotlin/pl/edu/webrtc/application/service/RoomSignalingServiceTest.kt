@@ -387,4 +387,61 @@ class RoomSignalingServiceTest {
             }
         }
     }
+
+    @Nested
+    inner class VerifyParticipantTests {
+
+        @Test
+        fun `should return room when valid host credentials are provided`() {
+            val room = Room(roomCode, hostId, hostSecret, SecurityMode.STANDARD)
+            every { roomRepository.findByCode(roomCode) } returns room
+
+            val result = service.verifyParticipant(roomCode, hostId, hostSecret)
+
+            assertEquals(room, result)
+            verify(exactly = 1) { roomRepository.findByCode(roomCode) }
+            confirmVerified(roomRepository)
+        }
+
+        @Test
+        fun `should return room when valid guest credentials are provided`() {
+            val room = Room(roomCode, hostId, hostSecret, SecurityMode.STANDARD).also {
+                it.requestJoin(guestId, guestSecret, metadata)
+            }
+            every { roomRepository.findByCode(roomCode) } returns room
+
+            val result = service.verifyParticipant(roomCode, guestId, guestSecret)
+
+            assertEquals(room, result)
+            verify(exactly = 1) { roomRepository.findByCode(roomCode) }
+            confirmVerified(roomRepository)
+        }
+
+        @Test
+        fun `should throw IllegalArgumentException when credentials do not match host or guest`() {
+            val room = Room(roomCode, hostId, hostSecret, SecurityMode.STANDARD).also {
+                it.requestJoin(guestId, guestSecret, metadata)
+            }
+            every { roomRepository.findByCode(roomCode) } returns room
+
+            assertThrows<IllegalArgumentException> {
+                service.verifyParticipant(roomCode, hostId, ClientSecret.generate())
+            }
+            assertThrows<IllegalArgumentException> {
+                service.verifyParticipant(roomCode, guestId, ClientSecret.generate())
+            }
+            assertThrows<IllegalArgumentException> {
+                service.verifyParticipant(roomCode, ClientId.generate(), hostSecret)
+            }
+        }
+
+        @Test
+        fun `should throw NoSuchElementException when room does not exist`() {
+            every { roomRepository.findByCode(roomCode) } returns null
+
+            assertThrows<NoSuchElementException> {
+                service.verifyParticipant(roomCode, hostId, hostSecret)
+            }
+        }
+    }
 }

@@ -408,5 +408,38 @@ class RoomControllerTest {
             }
             confirmVerified(signalingService)
         }
+
+        @Test
+        fun `should return CLOSED state and notify host with ROOM_CLOSED when guest submits wrong 2FA code`() {
+            val room = Room(roomCode, hostId, hostSecret, SecurityMode.TWO_FACTOR).also {
+                it.requestJoin(guestId, guestSecret, sampleMetadata)
+                it.resolveJoin(hostSecret, JoinDecision.ACCEPT)
+            }
+            val challenge = room.challenge2FA!!
+            val wrongCode = challenge.options.first { it != challenge.correctCode }
+            room.submit2FA(guestId, guestSecret, wrongCode)
+
+            every {
+                signalingService.submit2FA(roomCode, guestId, guestSecret, wrongCode)
+            } returns room
+
+            val response = controller.submit2FA(
+                rawCode = "123456",
+                rawGuestId = guestId.value.toString(),
+                rawGuestSecret = guestSecret.value,
+                request = Submit2FARequest(wrongCode.value)
+            )
+
+            assertEquals(Response.Status.OK.statusCode, response.status)
+            val body = response.entity as RoomStateResponse
+            assertEquals(RoomState.CLOSED, body.state)
+
+            verify(exactly = 1) {
+                sessionRegistry.sendToClient(
+                    hostId,
+                    match { it.type == pl.edu.webrtc.infrastructure.websocket.WsMessageType.ROOM_CLOSED }
+                )
+            }
+        }
     }
 }
