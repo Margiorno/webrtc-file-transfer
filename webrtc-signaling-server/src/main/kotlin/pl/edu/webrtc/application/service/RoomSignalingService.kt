@@ -106,4 +106,19 @@ class RoomSignalingService (
         return roomRepository.findByCode(code)
             ?: throw NoSuchElementException("Room with code ${code.value} was not found")
     }
+
+    fun verifyParticipant(
+        code: RoomCode,
+        clientId: ClientId,
+        secret: ClientSecret
+    ): Room {
+        val room = getRoomOrThrow(code)
+        val isHost = room.hostId == clientId && room.hostSecret == secret
+        val isGuest = room.guestId == clientId && room.guestSecret == secret
+
+        require(isHost || isGuest) {
+            "Invalid client credentials for room ${code.value}"
+        }
+        return room
+    }
 }

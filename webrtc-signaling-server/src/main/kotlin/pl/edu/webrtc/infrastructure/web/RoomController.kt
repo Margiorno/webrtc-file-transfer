@@ -12,14 +12,21 @@ import pl.edu.webrtc.application.service.RoomSignalingService
 import pl.edu.webrtc.domain.model.ClientId
 import pl.edu.webrtc.domain.model.ClientSecret
 import pl.edu.webrtc.domain.model.RoomCode
+import pl.edu.webrtc.domain.model.RoomState
 import pl.edu.webrtc.domain.model.SecurityMode
 import pl.edu.webrtc.domain.model.TwoFactorCode
+import pl.edu.webrtc.infrastructure.websocket.GuestJoinRequestedPayload
+import pl.edu.webrtc.infrastructure.websocket.OutgoingWsMessage
+import pl.edu.webrtc.infrastructure.websocket.TwoFactorOptionsPayload
+import pl.edu.webrtc.infrastructure.websocket.WebSocketSessionRegistry
+import pl.edu.webrtc.infrastructure.websocket.WsMessageType
 
 @Path("/api/rooms")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 class RoomController(
-    private val signalingService: RoomSignalingService
+    private val signalingService: RoomSignalingService,
+    private val sessionRegistry: WebSocketSessionRegistry
 ) {
     @POST
     fun createRoom(request: CreateRoomRequest?): Response {
@@ -54,6 +61,19 @@ class RoomController(
 
         val room = signalingService.requestJoin(roomCode, guestId, guestSecret, metadata)
 
+        sessionRegistry.sendToClient(
+            room.hostId,
+            OutgoingWsMessage(
+                type = WsMessageType.GUEST_JOIN_REQUESTED,
+                roomCode = room.code.value,
+                state = room.state,
+                payload = GuestJoinRequestedPayload(
+                    guestId = guestId.value.toString(),
+                    deviceMetadata = metadata
+                )
+            )
+        )
+
         val response = JoinRoomResponse(
             roomCode = room.code.value,
             guestId = guestId.value.toString(),
@@ -78,6 +98,32 @@ class RoomController(
         val hostSecret = ClientSecret(rawHostSecret)
 
         val room = signalingService.resolveJoin(roomCode, hostSecret, request.decision)
+
+        room.guestId?.let { guestId ->
+            when (room.state) {
+                RoomState.CLOSED -> sessionRegistry.sendToClient(
+                    guestId,
+                    OutgoingWsMessage(WsMessageType.ROOM_CLOSED, room.code.value, room.state)
+                )
+                RoomState.PENDING_2FA -> {
+                    val options = room.challenge2FA?.options?.map { it.value }.orEmpty()
+                    sessionRegistry.sendToClient(
+                        guestId,
+                        OutgoingWsMessage(
+                            type = WsMessageType.TWO_FACTOR_CHALLENGE,
+                            roomCode = room.code.value,
+                            state = room.state,
+                            payload = TwoFactorOptionsPayload(options)
+                        )
+                    )
+                }
+                RoomState.ACTIVE -> sessionRegistry.sendToClient(
+                    guestId,
+                    OutgoingWsMessage(WsMessageType.ROOM_ACTIVE, room.code.value, room.state)
+                )
+                else -> {}
+            }
+        }
 
         val response = ResolveJoinHostResponse(
             roomCode = room.code.value,
@@ -105,6 +151,21 @@ class RoomController(
         val twoFactorCode = TwoFactorCode(request.code)
 
         val room = signalingService.submit2FA(roomCode, guestId, guestSecret, twoFactorCode)
+
+        val eventType = if (room.state == RoomState.ACTIVE) {
+            WsMessageType.ROOM_ACTIVE
+        } else {
+            WsMessageType.ROOM_CLOSED
+        }
+
+        sessionRegistry.sendToClient(
+            room.hostId,
+            OutgoingWsMessage(
+                type = eventType,
+                roomCode = room.code.value,
+                state = room.state
+            )
+        )
 
         val response = RoomStateResponse(roomCode = room.code.value, state = room.state)
         return Response.ok(response).build()

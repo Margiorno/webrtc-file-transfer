@@ -12,6 +12,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import pl.edu.webrtc.application.service.RoomSignalingService
 import pl.edu.webrtc.domain.model.*
+import pl.edu.webrtc.infrastructure.websocket.WebSocketSessionRegistry
 import java.util.UUID
 
 @ExtendWith(MockKExtension::class)
@@ -19,6 +20,9 @@ class RoomControllerTest {
 
     @MockK
     private lateinit var signalingService: RoomSignalingService
+
+    @MockK(relaxed = true)
+    private lateinit var sessionRegistry: WebSocketSessionRegistry
 
     @InjectMockKs
     private lateinit var controller: RoomController
