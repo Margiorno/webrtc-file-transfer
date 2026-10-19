@@ -444,4 +444,34 @@ class RoomSignalingServiceTest {
             }
         }
     }
+
+    @Nested
+    inner class DisconnectTests {
+
+        @Test
+        fun `handleParticipantDisconnect should close room, delete it from repository and return remaining peer ID`() {
+            val room = Room(roomCode, hostId, hostSecret, SecurityMode.STANDARD).also {
+                it.requestJoin(guestId, guestSecret, metadata)
+            }
+            every { roomRepository.findByCode(roomCode) } returns room
+            justRun { roomRepository.deleteByCode(roomCode) }
+
+            val remainingPeer = service.handleParticipantDisconnect(roomCode, hostId)
+
+            assertEquals(guestId, remainingPeer)
+            assertEquals(RoomState.CLOSED, room.state)
+            verify(exactly = 1) { roomRepository.deleteByCode(roomCode) }
+        }
+
+        @Test
+        fun `handleParticipantDisconnect should return null when room does not exist or client is not a participant`() {
+            every { roomRepository.findByCode(roomCode) } returns null
+            assertNull(service.handleParticipantDisconnect(roomCode, hostId))
+
+            val room = Room(roomCode, hostId, hostSecret, SecurityMode.STANDARD)
+            every { roomRepository.findByCode(roomCode) } returns room
+            assertNull(service.handleParticipantDisconnect(roomCode, ClientId.generate()))
+            verify(exactly = 0) { roomRepository.deleteByCode(anyRoomCode()) }
+        }
+    }
 }

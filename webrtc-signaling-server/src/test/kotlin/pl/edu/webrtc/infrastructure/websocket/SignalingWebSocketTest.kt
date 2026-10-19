@@ -34,6 +34,7 @@ class SignalingWebSocketTest {
     }
 
     private fun MockKMatcherScope.anyClientId(): ClientId = anyInline(UUID::class.java)
+    private fun MockKMatcherScope.anyRoomCode(): RoomCode = anyInline(String::class.java)
 
     @BeforeEach
     fun setUp() {
@@ -46,7 +47,7 @@ class SignalingWebSocketTest {
         every { connection.id() } returns "conn-test"
         every { connection.isOpen } returns true
 
-        justRun { sessionRegistry.register(anyClientId(), any()) }
+        justRun { sessionRegistry.register(anyClientId(), anyRoomCode(), any()) }
         every { sessionRegistry.sendToClient(anyClientId(), any()) } returns true
     }
 
@@ -62,7 +63,7 @@ class SignalingWebSocketTest {
         webSocket.onMessage("123456", rawJson, connection)
 
         verify(exactly = 1) { signalingService.verifyParticipant(roomCode, hostId, hostSecret) }
-        verify(exactly = 1) { sessionRegistry.register(hostId, connection) }
+        verify(exactly = 1) { sessionRegistry.register(hostId, roomCode, connection) }
         verify(exactly = 1) {
             sessionRegistry.sendToClient(
                 hostId,
@@ -159,13 +160,37 @@ class SignalingWebSocketTest {
     }
 
     @Test
-    fun `onClose should unregister connection from registry`() {
-        val realRegistry = spyk(WebSocketSessionRegistry(objectMapper))
-        val wsWithRealRegistry = SignalingWebSocket(signalingService, realRegistry, objectMapper)
+    fun `onClose should unregister connection, close room and send PEER_DISCONNECTED to remaining peer`() {
+        val roomRepository = mockk<pl.edu.webrtc.domain.repository.RoomRepository>()
+        val realService = RoomSignalingService(roomRepository)
+        val ws = SignalingWebSocket(realService, sessionRegistry, objectMapper)
 
-        realRegistry.register(hostId, connection)
-        wsWithRealRegistry.onClose(connection)
+        val room = Room(roomCode, hostId, hostSecret, SecurityMode.STANDARD).also {
+            it.requestJoin(guestId, ClientSecret.generate(), DeviceMetadata(DeviceType.DESKTOP_PC, OperatingSystem.WINDOWS, Browser.FIREFOX))
+        }
+        every { roomRepository.findByCode(roomCode) } returns room
+        justRun { roomRepository.deleteByCode(roomCode) }
+        every {
+            sessionRegistry.unregisterByConnectionId("conn-test")
+        } returns DisconnectedSession(hostId, roomCode)
 
-        verify(exactly = 1) { realRegistry.unregisterByConnectionId("conn-test") }
+        ws.onClose(connection)
+
+        verify(exactly = 1) { roomRepository.deleteByCode(roomCode) }
+        verify(exactly = 1) {
+            sessionRegistry.sendToClient(
+                guestId,
+                OutgoingWsMessage(WsMessageType.PEER_DISCONNECTED, "123456", RoomState.CLOSED)
+            )
+        }
+    }
+
+    @Test
+    fun `onClose should do nothing when connection was not registered`() {
+        every { sessionRegistry.unregisterByConnectionId("conn-test") } returns null
+
+        webSocket.onClose(connection)
+
+        verify(exactly = 0) { signalingService.handleParticipantDisconnect(anyRoomCode(), anyClientId()) }
     }
 }

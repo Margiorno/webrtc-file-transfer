@@ -7,6 +7,7 @@ import pl.edu.webrtc.application.service.RoomSignalingService
 import pl.edu.webrtc.domain.model.ClientId
 import pl.edu.webrtc.domain.model.ClientSecret
 import pl.edu.webrtc.domain.model.RoomCode
+import pl.edu.webrtc.domain.model.RoomState
 
 @WebSocket(path = "/ws/signaling/{code}")
 class SignalingWebSocket(
@@ -48,7 +49,24 @@ class SignalingWebSocket(
 
     @OnClose
     fun onClose(connection: WebSocketConnection) {
-        sessionRegistry.unregisterByConnectionId(connection.id())
+        val disconnected = sessionRegistry.unregisterByConnectionId(connection.id())
+            ?: return
+
+        val remainingParticipantId = signalingService.handleParticipantDisconnect(
+            code = disconnected.roomCode,
+            disconnectedClientId = disconnected.clientId
+        )
+
+        if (remainingParticipantId != null) {
+            sessionRegistry.sendToClient(
+                remainingParticipantId,
+                OutgoingWsMessage(
+                    type = WsMessageType.PEER_DISCONNECTED,
+                    roomCode = disconnected.roomCode.value,
+                    state = RoomState.CLOSED
+                )
+            )
+        }
     }
 
     private fun parseMessage(rawMessage: String): IncomingWsMessage {
@@ -94,7 +112,7 @@ class SignalingWebSocket(
             secret
         )
 
-        sessionRegistry.register(senderId, connection)
+        sessionRegistry.register(senderId, room.code, connection)
 
         sessionRegistry.sendToClient(
             senderId,

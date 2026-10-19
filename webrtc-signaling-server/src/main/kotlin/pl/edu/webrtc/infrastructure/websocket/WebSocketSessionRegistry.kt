@@ -1,11 +1,16 @@
-
 package pl.edu.webrtc.infrastructure.websocket
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import io.quarkus.websockets.next.WebSocketConnection
 import jakarta.enterprise.context.ApplicationScoped
 import pl.edu.webrtc.domain.model.ClientId
+import pl.edu.webrtc.domain.model.RoomCode
 import java.util.concurrent.ConcurrentHashMap
+
+data class DisconnectedSession(
+    val clientId: ClientId,
+    val roomCode: RoomCode
+)
 
 @ApplicationScoped
 class WebSocketSessionRegistry(
@@ -13,12 +18,12 @@ class WebSocketSessionRegistry(
 ) {
     private val sessionsByClient =
         ConcurrentHashMap<String, WebSocketConnection>()
-
-    private val clientsByConnectionId =
-        ConcurrentHashMap<String, String>()
+    private val sessionsByConnectionId =
+        ConcurrentHashMap<String, DisconnectedSession>()
 
     fun register(
         clientId: ClientId,
+        roomCode: RoomCode,
         connection: WebSocketConnection
     ) {
         val rawClientId = clientId.value.toString()
@@ -26,30 +31,31 @@ class WebSocketSessionRegistry(
 
         val previousConnection =
             sessionsByClient.put(rawClientId, connection)
-
-        clientsByConnectionId[connectionId] = rawClientId
+        sessionsByConnectionId[connectionId] = DisconnectedSession(clientId, roomCode)
 
         if (previousConnection != null &&
             previousConnection.id() != connectionId
         ) {
-            clientsByConnectionId.remove(
-                previousConnection.id(),
-                rawClientId
-            )
+            sessionsByConnectionId.remove(previousConnection.id())
         }
     }
 
-    fun unregisterByConnectionId(connectionId: String) {
-        val rawClientId = clientsByConnectionId.remove(connectionId)
-            ?: return
+    fun unregisterByConnectionId(connectionId: String): DisconnectedSession? {
+        val disconnected = sessionsByConnectionId.remove(connectionId)
+            ?: return null
+        val rawClientId = disconnected.clientId.value.toString()
 
+        var removedActiveConnection = false
         sessionsByClient.computeIfPresent(rawClientId) { _, currentConnection ->
             if (currentConnection.id() == connectionId) {
+                removedActiveConnection = true
                 null
             } else {
                 currentConnection
             }
         }
+
+        return if (removedActiveConnection) disconnected else null
     }
 
     fun sendToClient(
@@ -67,7 +73,6 @@ class WebSocketSessionRegistry(
 
         val json = objectMapper.writeValueAsString(message)
         connection.sendTextAndAwait(json)
-
         return true
     }
 }

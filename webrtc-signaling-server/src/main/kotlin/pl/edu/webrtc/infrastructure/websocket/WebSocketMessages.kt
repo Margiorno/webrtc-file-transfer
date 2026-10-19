@@ -15,6 +15,7 @@ enum class WsMessageType {
     TWO_FACTOR_CHALLENGE,
     ROOM_ACTIVE,
     ROOM_CLOSED,
+    PEER_DISCONNECTED,
     ERROR
 }
 

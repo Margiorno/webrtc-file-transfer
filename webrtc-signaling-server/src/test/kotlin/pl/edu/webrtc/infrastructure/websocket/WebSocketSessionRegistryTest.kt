@@ -7,12 +7,14 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import pl.edu.webrtc.domain.model.ClientId
+import pl.edu.webrtc.domain.model.RoomCode
 import pl.edu.webrtc.domain.model.RoomState
 
 class WebSocketSessionRegistryTest {
 
     private lateinit var registry: WebSocketSessionRegistry
     private val objectMapper = ObjectMapper()
+    private val roomCode = RoomCode("123456")
 
     @BeforeEach
     fun setUp() {
@@ -27,7 +29,7 @@ class WebSocketSessionRegistryTest {
         every { connection.isOpen } returns true
         justRun { connection.sendTextAndAwait(any<String>()) }
 
-        registry.register(clientId, connection)
+        registry.register(clientId, roomCode, connection)
 
         val message = OutgoingWsMessage(
             type = WsMessageType.AUTH_SUCCESS,
@@ -60,7 +62,7 @@ class WebSocketSessionRegistryTest {
         every { connection.id() } returns "conn-closed"
         every { connection.isOpen } returns false
 
-        registry.register(clientId, connection)
+        registry.register(clientId, roomCode, connection)
 
         val sent = registry.sendToClient(
             clientId,
@@ -72,15 +74,15 @@ class WebSocketSessionRegistryTest {
     }
 
     @Test
-    fun `unregisterByConnectionId should remove session`() {
+    fun `unregisterByConnectionId should remove session and return DisconnectedSession`() {
         val clientId = ClientId.generate()
         val connection = mockk<WebSocketConnection>()
-
         every { connection.id() } returns "conn-123"
 
-        registry.register(clientId, connection)
+        registry.register(clientId, roomCode, connection)
 
-        registry.unregisterByConnectionId("conn-123")
+        val disconnected = registry.unregisterByConnectionId("conn-123")
+        assertEquals(DisconnectedSession(clientId, roomCode), disconnected)
 
         val sentAfterRemove = registry.sendToClient(
             clientId,
@@ -89,7 +91,21 @@ class WebSocketSessionRegistryTest {
                 "123456"
             )
         )
-
         assertFalse(sentAfterRemove)
+    }
+
+    @Test
+    fun `registering new connection for same client should replace old connection`() {
+        val clientId = ClientId.generate()
+        val oldConn = mockk<WebSocketConnection>()
+        val newConn = mockk<WebSocketConnection>()
+        every { oldConn.id() } returns "conn-old"
+        every { newConn.id() } returns "conn-new"
+
+        registry.register(clientId, roomCode, oldConn)
+        registry.register(clientId, roomCode, newConn)
+
+        assertNull(registry.unregisterByConnectionId("conn-old"))
+        assertEquals(DisconnectedSession(clientId, roomCode), registry.unregisterByConnectionId("conn-new"))
     }
 }

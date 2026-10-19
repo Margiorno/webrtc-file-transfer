@@ -102,11 +102,6 @@ class RoomSignalingService (
             ?: error("Recipient not found in room ${code.value}")
     }
 
-    private fun getRoomOrThrow(code: RoomCode): Room {
-        return roomRepository.findByCode(code)
-            ?: throw NoSuchElementException("Room with code ${code.value} was not found")
-    }
-
     fun verifyParticipant(
         code: RoomCode,
         clientId: ClientId,
@@ -120,5 +115,25 @@ class RoomSignalingService (
             "Invalid client credentials for room ${code.value}"
         }
         return room
+    }
+
+    fun handleParticipantDisconnect(
+        code: RoomCode,
+        disconnectedClientId: ClientId
+    ): ClientId? {
+        val room = roomRepository.findByCode(code) ?: return null
+        if (room.hostId != disconnectedClientId && room.guestId != disconnectedClientId) {
+            return null
+        }
+
+        val remainingParticipantId = room.getRecipientId(disconnectedClientId)
+        room.close()
+        roomRepository.deleteByCode(code)
+        return remainingParticipantId
+    }
+
+    private fun getRoomOrThrow(code: RoomCode): Room {
+        return roomRepository.findByCode(code)
+            ?: throw NoSuchElementException("Room with code ${code.value} was not found")
     }
 }

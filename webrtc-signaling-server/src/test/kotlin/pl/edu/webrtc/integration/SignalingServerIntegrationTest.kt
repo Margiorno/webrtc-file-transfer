@@ -381,4 +381,58 @@ class SignalingServerIntegrationTest {
             .statusCode(409)
             .body("error", equalTo("CONFLICT"))
     }
+
+    @Test
+    fun `E2E Disconnect - closing WebSocket notifies peer with PEER_DISCONNECTED and deletes room`() {
+        val created = given()
+            .contentType(ContentType.JSON)
+            .body(CreateRoomRequest(SecurityMode.STANDARD))
+            .`when`()
+            .post("/api/rooms")
+            .then()
+            .statusCode(201)
+            .extract()
+            .`as`(RoomCreatedResponse::class.java)
+
+        val hostWs = TestWsClient(created.roomCode)
+        var guestWs: TestWsClient? = null
+
+        try {
+            hostWs.send(IncomingWsMessage(WsMessageType.AUTH, created.hostId, created.hostSecret))
+            assertEquals("AUTH_SUCCESS", hostWs.awaitMessage().get("type").asText())
+
+            val joined = given()
+                .`when`()
+                .post("/api/rooms/${created.roomCode}/join")
+                .then()
+                .statusCode(200)
+                .extract()
+                .`as`(JoinRoomResponse::class.java)
+
+            assertEquals("GUEST_JOIN_REQUESTED", hostWs.awaitMessage().get("type").asText())
+
+            guestWs = TestWsClient(created.roomCode)
+            guestWs.send(IncomingWsMessage(WsMessageType.AUTH, joined.guestId, joined.guestSecret))
+            assertEquals("AUTH_SUCCESS", guestWs.awaitMessage().get("type").asText())
+
+            guestWs.close()
+            guestWs = null
+
+            val disconnectMsg = hostWs.awaitMessage()
+            assertEquals("PEER_DISCONNECTED", disconnectMsg.get("type").asText())
+            assertEquals("CLOSED", disconnectMsg.get("state").asText())
+
+            given()
+                .contentType(ContentType.JSON)
+                .header("X-Client-Secret", created.hostSecret)
+                .body(ResolveJoinRequest(JoinDecision.ACCEPT))
+                .`when`()
+                .post("/api/rooms/${created.roomCode}/resolve")
+                .then()
+                .statusCode(404)
+        } finally {
+            hostWs.close()
+            guestWs?.close()
+        }
+    }
 }

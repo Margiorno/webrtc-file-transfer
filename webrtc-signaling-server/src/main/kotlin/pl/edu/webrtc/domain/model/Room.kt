@@ -82,6 +82,10 @@ class Room(
         }
     }
 
+    fun close() {
+        this.state = RoomState.CLOSED
+    }
+
     companion object {
         fun reconstruct(
             code: RoomCode,
