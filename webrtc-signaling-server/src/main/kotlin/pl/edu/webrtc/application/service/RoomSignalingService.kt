@@ -63,7 +63,7 @@ class RoomSignalingService (
         val room = getRoomOrThrow(code)
         room.resolveJoin(hostSecret, decision)
 
-        if (room.state.equals(RoomState.CLOSED)){
+        if (room.state == RoomState.CLOSED){
             roomRepository.deleteByCode(code)
         } else {
             roomRepository.save(room)
