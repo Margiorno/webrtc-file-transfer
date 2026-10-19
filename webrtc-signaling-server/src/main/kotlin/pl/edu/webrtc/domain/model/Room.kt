@@ -81,4 +81,26 @@ class Room(
             else -> null
         }
     }
+
+    companion object {
+        fun reconstruct(
+            code: RoomCode,
+            hostId: ClientId,
+            hostSecret: ClientSecret,
+            securityMode: SecurityMode,
+            state: RoomState,
+            guestId: ClientId?,
+            guestSecret: ClientSecret?,
+            guestMetadata: DeviceMetadata?,
+            challenge2FA: TwoFactorChallenge?
+        ): Room {
+            return Room(code, hostId, hostSecret, securityMode).also {
+                it.state = state
+                it.guestId = guestId
+                it.guestSecret = guestSecret
+                it.guestMetadata = guestMetadata
+                it.challenge2FA = challenge2FA
+            }
+        }
+    }
 }
