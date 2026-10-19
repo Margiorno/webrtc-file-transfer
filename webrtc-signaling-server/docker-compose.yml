@@ -1,0 +1,38 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: webrtc-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - webrtc-net
+    restart: unless-stopped
+
+  signaling-server:
+    build:
+      context: .
+      dockerfile: src/main/docker/Dockerfile
+    container_name: webrtc-signaling-server
+    labels:
+      io.quarkus.devservices.compose.ignored: "true"
+    ports:
+      - "8080:8080"
+    environment:
+      QUARKUS_REDIS_HOSTS: redis://redis:6379
+      WEBRTC_ROOM_TTL_SECONDS: 900
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - webrtc-net
+    restart: unless-stopped
+
+networks:
+  webrtc-net:
+    driver: bridge

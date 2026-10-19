@@ -1,0 +1,20 @@
+# Ignore local Gradle build artifacts and cache (the container builds its own)
+.gradle/
+build/
+
+# Ignore IDE and OS files
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+bin/
+*.iml
+*.ipr
+*.iws
+.DS_Store
+
+# Ignore Git and local environment files
+.git/
+.gitignore
+.env
