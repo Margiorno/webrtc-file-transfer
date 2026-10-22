@@ -1,9 +1,11 @@
-import type { RoomCode, WsMessage } from "../types/Models";
+import type { RoomCode, IncomingWsFrame, OutgoingWsFrame, ClientSecret, ClientId } from "../types/Models";
 
+type MessageListener = (message: IncomingWsFrame) => void;
 
 export class SignalingService {
     private ws: WebSocket | null = null;
     private readonly baseWsUrl = 'ws://localhost:8080/ws/signaling';
+    private listeners: Set<MessageListener> = new Set();
 
     public connect(roomCode: RoomCode, clientId: string, clientSecret: string): Promise<void> {
         return new Promise((resolve, reject) => {
@@ -20,17 +22,17 @@ export class SignalingService {
             };
 
             this.ws.onmessage = (event) => {
-                const message: WsMessage = JSON.parse(event.data);
+                const message: IncomingWsFrame = JSON.parse(event.data);
                 console.log('[SignalingService] Received:', message);
 
                 if (message.type === 'AUTH_SUCCESS') {
                     console.log('[SignalingService] Authentication successful. Connection established.');
                     resolve();
+                } else if (message.type === 'ERROR') {
+                    reject(new Error(JSON.stringify(message.payload)));
                 }
 
-                // Future logic for handling GUEST_JOIN_REQUESTED, SDP, etc. will go here
-                // or be delegated to event listeners.
-
+                this.listeners.forEach((listener) => listener(message));
             };
 
             this.ws.onerror = (error) => {
@@ -44,7 +46,21 @@ export class SignalingService {
         });
     }
 
-    public sendMessage(message: WsMessage) {
+    onMessage(listener: MessageListener) {
+        this.listeners.add(listener);
+
+        return () => {
+            this.listeners.delete(listener);
+        }
+    }
+
+    private saveSessionCredentials(roomCode: RoomCode, clientId: ClientId, clientSecret: ClientSecret) {
+        sessionStorage.setItem('webrtc_room_code', roomCode);
+        sessionStorage.setItem('webrtc_client_id', clientId);
+        sessionStorage.setItem('webrtc_client_secret', clientSecret);
+    }
+
+    public sendMessage(message: OutgoingWsFrame) {
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify(message));
         } else {

@@ -2,7 +2,7 @@ export type ClientId = string;
 export type ClientSecret = string;
 export type RoomCode = string;
 
-export type RoomState = 
+export type RoomState =
     | 'WAITING_FOR_GUEST'
     | 'PENDING_HOST_APPROVAL'
     | 'PENDING_2FA'
@@ -14,20 +14,35 @@ export interface CreateRoomResponse {
     hostId: ClientId;
     hostSecret: ClientSecret;
     state: RoomState;
+    securityMode: string;
 }
 
 export interface JoinRoomResponse {
+    roomCode?: RoomCode;
     guestId: ClientId;
     guestSecret: ClientSecret;
     state: RoomState;
 }
 
-export type WsMessage =
-    | { type: 'AUTH'; clientId: ClientId; clientSecret: ClientSecret }
-    | { type: 'AUTH_SUCCESS'; state: RoomState }
-    | { type: 'GUEST_JOIN_REQUESTED'; deviceType: string; os: string; browser: string }
-    | { type: 'TWO_FACTOR_CHALLENGE'; options: string[] }
-    | { type: 'ROOM_ACTIVE'; state: RoomState }
-    | { type: 'SDP_OFFER'; sdpPayload: string }
-    | { type: 'SDP_ANSWER'; sdpPayload: string }
-    | { type: 'ICE_CANDIDATE'; candidate: string }; 
+export interface IncomingWsFrame {
+    type:
+    | 'AUTH_SUCCESS'
+    | 'GUEST_JOIN_REQUESTED'
+    | 'TWO_FACTOR_CHALLENGE'
+    | 'ROOM_ACTIVE'
+    | 'SDP_OFFER'
+    | 'SDP_ANSWER'
+    | 'ICE_CANDIDATE'
+    | 'PEER_DISCONNECTED'
+    | 'ERROR';
+    roomCode: RoomCode;
+    state?: RoomState | null;
+    payload?: unknown;
+}
+
+export interface OutgoingWsFrame {
+    type: 'AUTH' | 'SDP_OFFER' | 'SDP_ANSWER' | 'ICE_CANDIDATE';
+    clientId: ClientId;
+    clientSecret: ClientSecret;
+    payload?: unknown;
+}
