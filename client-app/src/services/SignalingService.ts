@@ -1,13 +1,13 @@
-import type { WsMessage } from "../types/Models";
+import type { RoomCode, WsMessage } from "../types/Models";
 
 
 export class SignalingService {
     private ws: WebSocket | null = null;
-    private readonly wsUrl = 'ws://localhost:8080/ws/signaling';
+    private readonly baseWsUrl = 'ws://localhost:8080/ws/signaling';
 
-    public connect(clientId: string, clientSecret: string): Promise<void> {
+    public connect(roomCode: RoomCode, clientId: string, clientSecret: string): Promise<void> {
         return new Promise((resolve, reject) => {
-            this.ws = new WebSocket(this.wsUrl);
+            this.ws = new WebSocket(`${this.baseWsUrl}/${roomCode}`);
 
             this.ws.onopen = () => {
                 console.log('[SignalingService] WebSocket connected. Sending AUTH frame...');
