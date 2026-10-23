@@ -27,6 +27,7 @@ export class SignalingService {
 
                 if (message.type === 'AUTH_SUCCESS') {
                     console.log('[SignalingService] Authentication successful. Connection established.');
+                    this.saveSessionCredentials(roomCode, clientId, clientSecret); // <-- brakowało tego wywołania
                     resolve();
                 } else if (message.type === 'ERROR') {
                     reject(new Error(JSON.stringify(message.payload)));
