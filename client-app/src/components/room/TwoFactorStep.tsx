@@ -15,32 +15,45 @@ export function TwoFactorStep({
 }: TwoFactorStepProps) {
   if (role === 'HOST') {
     return (
-      <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
-        <p className="text-sm text-purple-900 font-medium">
-          Ask your guest to select this 2FA verification code:
-        </p>
-        <div className="bg-white p-4 rounded-lg text-4xl font-mono font-bold text-purple-700 tracking-widest border border-purple-100">
+      <div className="py-4 text-center space-y-6 animate-fade-in">
+        <div className="space-y-1">
+          <p className="text-xs font-bold uppercase tracking-widest text-stone-400">
+            2FA Verification PIN
+          </p>
+          <p className="text-sm text-stone-500">
+            Ask your guest to select this exact code on their screen
+          </p>
+        </div>
+
+        <div className="bg-stone-900 text-stone-50 py-8 px-6 rounded-3xl text-5xl font-mono font-extrabold tracking-[0.3em] shadow-lg">
           {hostTwoFactorCode ?? '---'}
         </div>
-        <p className="text-xs text-purple-600 animate-pulse">
-          Waiting for guest to complete 2FA...
+
+        <p className="text-xs font-semibold text-amber-800 animate-pulse">
+          Waiting for guest to verify PIN...
         </p>
       </div>
     );
   }
 
   return (
-    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
-      <p className="text-sm text-purple-900 font-medium">
-        Select the 2FA code displayed on the Host screen:
-      </p>
-      <div className="grid grid-cols-3 gap-3">
+    <div className="py-4 text-center space-y-6 animate-fade-in">
+      <div className="space-y-1">
+        <p className="text-xs font-bold uppercase tracking-widest text-stone-400">
+          Security Challenge
+        </p>
+        <p className="text-sm text-stone-500">
+          Tap the 3-digit PIN displayed on the Host screen
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-4">
         {guestTwoFactorOptions.map((option) => (
           <button
             key={option}
             onClick={() => onSubmit2FA(option)}
             disabled={isLoading}
-            className="py-3 px-2 bg-white hover:bg-purple-600 hover:text-white text-purple-800 font-mono text-xl font-bold rounded-lg border border-purple-300 transition-colors disabled:opacity-50"
+            className="py-6 px-3 bg-stone-50 hover:bg-stone-900 hover:text-stone-50 text-stone-900 font-mono text-2xl font-extrabold rounded-2xl border-2 border-stone-200 hover:border-stone-900 transition-all active:scale-95 disabled:opacity-40 cursor-pointer"
           >
             {option}
           </button>

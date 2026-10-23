@@ -15,36 +15,68 @@ export function HostApprovalStep({
 }: HostApprovalStepProps) {
   if (role === 'GUEST') {
     return (
-      <p className="text-sm text-yellow-600 animate-pulse py-6">
-        Waiting for the Host to approve your connection...
-      </p>
+      <div className="py-10 text-center space-y-4 animate-fade-in">
+        <div className="w-10 h-10 border-3 border-amber-800 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        <div className="space-y-1">
+          <p className="text-lg font-bold text-stone-900">Awaiting Host Approval</p>
+          <p className="text-sm text-stone-500">
+            The host is reviewing your device fingerprint...
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-left space-y-3">
-      <p className="font-bold text-yellow-900 text-center">Guest wants to join!</p>
+    <div className="space-y-6 text-left animate-fade-in">
+      <div className="space-y-1 text-center">
+        <h3 className="text-xl font-extrabold text-stone-900">Incoming Peer Request</h3>
+        <p className="text-sm text-stone-500">Verify device details before granting access</p>
+      </div>
+
       {guestMetadata && (
-        <div className="text-sm bg-white p-3 rounded border border-yellow-100 space-y-1">
-          <p><span className="font-semibold">Device:</span> {guestMetadata.deviceType ?? 'Unknown'}</p>
-          <p><span className="font-semibold">OS:</span> {guestMetadata.os ?? 'Unknown'}</p>
-          <p><span className="font-semibold">Browser:</span> {guestMetadata.browser ?? 'Unknown'}</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 text-center">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+              Device
+            </span>
+            <span className="font-mono text-sm font-bold text-stone-900">
+              {guestMetadata.deviceType ?? 'Unknown'}
+            </span>
+          </div>
+          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 text-center">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+              System
+            </span>
+            <span className="font-mono text-sm font-bold text-stone-900">
+              {guestMetadata.os ?? 'Unknown'}
+            </span>
+          </div>
+          <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 text-center">
+            <span className="block text-[11px] font-bold uppercase tracking-wider text-stone-400 mb-1">
+              Browser
+            </span>
+            <span className="font-mono text-sm font-bold text-stone-900">
+              {guestMetadata.browser ?? 'Unknown'}
+            </span>
+          </div>
         </div>
       )}
-      <div className="grid grid-cols-2 gap-3 pt-2">
-        <button
-          onClick={() => onResolveJoin('ACCEPT')}
-          disabled={isLoading}
-          className="py-2 px-4 rounded-lg font-bold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
-        >
-          Accept
-        </button>
+
+      <div className="grid grid-cols-2 gap-4 pt-2">
         <button
           onClick={() => onResolveJoin('REJECT')}
           disabled={isLoading}
-          className="py-2 px-4 rounded-lg font-bold text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+          className="py-5 px-6 rounded-2xl text-base font-bold text-stone-700 bg-stone-100 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border-2 border-transparent disabled:opacity-50 transition-all cursor-pointer"
         >
-          Reject
+          Decline
+        </button>
+        <button
+          onClick={() => onResolveJoin('ACCEPT')}
+          disabled={isLoading}
+          className="py-5 px-6 rounded-2xl text-base font-bold text-stone-50 bg-stone-900 hover:bg-stone-800 disabled:opacity-50 transition-all shadow-lg shadow-stone-900/15 cursor-pointer"
+        >
+          {isLoading ? 'Processing...' : 'Approve Peer'}
         </button>
       </div>
     </div>

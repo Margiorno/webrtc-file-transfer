@@ -58,18 +58,31 @@ export function RoomView({
     }
   };
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between border-b pb-3">
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-          Role: {role}
-        </span>
-        <span className="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-700">
-          State: {roomState}
-        </span>
-      </div>
+  const isHost = role === 'HOST';
 
-      <h2 className="text-2xl font-bold text-gray-800">Room {roomCode}</h2>
+  return (
+    <div className="space-y-8 animate-fade-in">
+      <div className="flex items-center justify-between border-b border-stone-200 pb-5">
+        <div className="flex items-center gap-3">
+          <span
+            className={`px-3.5 py-1.5 text-xs font-bold tracking-widest uppercase rounded-xl ${
+              isHost
+                ? 'bg-stone-900 text-stone-50'
+                : 'bg-amber-900 text-amber-50'
+            }`}
+          >
+            {isHost ? 'Host Session' : 'Guest Session'}
+          </span>
+          <span className="text-sm font-mono font-bold text-stone-400">#{roomCode}</span>
+        </div>
+
+        <button
+          onClick={onLeaveRoom}
+          className="text-xs font-bold uppercase tracking-wider text-stone-400 hover:text-stone-900 transition-colors cursor-pointer"
+        >
+          Leave
+        </button>
+      </div>
 
       {renderStepContent()}
     </div>
