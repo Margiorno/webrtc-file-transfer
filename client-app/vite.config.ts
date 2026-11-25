@@ -4,4 +4,12 @@ import { defineConfig } from 'vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    // Żądania do API i WebSocketa idą przez serwer deweloperski Vite,
+    // dzięki czemu klient używa adresów względnych i działa także na innych urządzeniach w sieci.
+    proxy: {
+      '/api': 'http://localhost:8080',
+      '/ws': { target: 'ws://localhost:8080', ws: true },
+    },
+  },
 })

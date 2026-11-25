@@ -4,7 +4,8 @@ type MessageListener = (message: IncomingWsFrame) => void;
 
 export class SignalingService {
     private ws: WebSocket | null = null;
-    private readonly baseWsUrl = 'ws://localhost:8080/ws/signaling';
+    private readonly baseWsUrl =
+        `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/signaling`;
     private listeners: Set<MessageListener> = new Set();
 
     public connect(roomCode: RoomCode, clientId: string, clientSecret: string): Promise<void> {
