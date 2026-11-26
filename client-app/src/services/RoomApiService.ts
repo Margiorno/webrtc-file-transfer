@@ -11,7 +11,7 @@ import type {
 } from '../types/Models';
 
 export class RoomApiService {
-  private readonly baseUrl = 'http://localhost:8080/api/rooms';
+  private readonly baseUrl = '/api/rooms';
 
   public async createRoom(securityMode: SecurityMode = 'STANDARD'): Promise<CreateRoomResponse> {
     const response = await fetch(this.baseUrl, {
